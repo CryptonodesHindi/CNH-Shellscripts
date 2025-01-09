@@ -31,30 +31,6 @@ echo -e "${YELLOW}Medium: ${BLUE}https://medium.com/@cryptonodehindi${NC}"
 
 echo "============================================="
 
-# Prompt for username and password
-while true; do
-    read -p "Enter the username for remote desktop: " USER
-    if [[ "$USER" == "root" ]]; then
-        echo -e "${RED}Error: 'root' cannot be used as the username. Please choose a different username.${NC}"
-    elif [[ "$USER" =~ [^a-zA-Z0-9] ]]; then
-        echo -e "${RED}Error: Username contains forbidden characters. Only alphanumeric characters are allowed.${NC}"
-    else
-        break
-    fi
-done
-
-while true; do
-    read -sp "Enter the password for $USER: " PASSWORD
-    echo
-    if [[ "$PASSWORD" =~ [^a-zA-Z0-9] ]]; then
-        echo -e "${RED}Error: Password contains forbidden characters. Only alphanumeric characters are allowed.${NC}"
-    else
-        break
-    fi
-done
-
-
-
 # Update and install required packages
 echo -e "${INFO}Updating package list...${NC}"
 sudo apt update
@@ -69,17 +45,6 @@ sudo apt install -y xfce4 xfce4-goodies xubuntu-desktop
 echo -e "${INFO}Installing XRDP for remote desktop...${NC}"
 sudo apt install -y xrdp
 
-echo -e "${INFO}Adding the user $USER with the specified password...${NC}"
-sudo useradd -m -s /bin/bash $USER
-echo "$USER:$PASSWORD" | sudo chpasswd
-
-echo -e "${INFO}Adding $USER to the sudo group...${NC}"
-sudo usermod -aG sudo $USER
-
-# Configure XRDP to use XFCE
-echo -e "${INFO}Configuring XRDP to use XFCE desktop...${NC}"
-echo "xfce4-session" | sudo tee /home/$USER/.xsession
-
 echo -e "${INFO}Configuring XRDP to use lower resolution by default...${NC}"
 sudo sed -i 's/^#xserverbpp=24/xserverbpp=16/' /etc/xrdp/xrdp.ini
 echo -e "${GREEN}XRDP configuration updated to use lower color depth.${NC}"
@@ -93,14 +58,6 @@ sudo systemctl restart xrdp
 
 echo -e "${INFO}Enabling XRDP service at startup...${NC}"
 sudo systemctl enable xrdp
-
-# Ensure the Desktop directory exists
-DESKTOP_DIR="/home/$USER/openledger.setup"
-if [ ! -d "$DESKTOP_DIR" ]; then
-    echo -e "${INFO}Directory openledger.setup not found. Creating directory for $USER...${NC}"
-    sudo mkdir -p "$DESKTOP_DIR"
-    sudo chown $USER:$USER "$DESKTOP_DIR"
-fi
 
 # docker setup
 for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
@@ -128,10 +85,7 @@ wget https://cdn.openledger.xyz/openledger-node-1.0.0-linux.zip
 sudo apt install unzip -y
 unzip openledger-node-1.0.0-linux.zip
 sudo dpkg -i openledger-node-1.0.0.deb
-
-# Set permissions for the desktop file
-sudo chmod +x $DESKTOP_FILE
-sudo chown $USER:$USER $DESKTOP_FILE
+sudo apt --fix-broken install -y
 
 # Get the server IP address
 IP_ADDR=$(hostname -I | awk '{print $1}')
@@ -140,8 +94,7 @@ IP_ADDR=$(hostname -I | awk '{print $1}')
 echo -e "${GREEN}RDP Installation completed.${NC}"
 echo -e "${INFO}You can now connect via Remote Desktop with the following details:${NC}"
 echo -e "${INFO}IP ADDRESS: ${GREEN}$IP_ADDR${NC}"
-echo -e "${INFO}USER: ${GREEN}$USER${NC}"
-echo -e "${INFO}PASSWORD: ${GREEN}$PASSWORD${NC}"
+echo -e "${INFO}USER: ${GREEN}root${NC}"
 
 # Display thank you message
 echo "==================================="
