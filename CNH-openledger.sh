@@ -35,23 +35,37 @@ echo "============================================="
 echo -e "${INFO}Updating package list...${NC}"
 sudo apt update
 
-echo -e "${INFO}Installing curl and gdebi for handling .deb files...${NC}"
-sudo apt install -y curl gdebi-core
+# Enabling the necessary ports
+echo -e "${INFO}Allowing necessary ports through the firewall...${NC}"
+sudo ufw allow 22 comment 'Allow SSH'
+sudo ufw allow 3389 comment 'Allow RDP'
+sudo ufw reload
 
-# Install XFCE and XRDP
+# XFCE setup
 echo -e "${INFO}Installing XFCE Desktop for lower resource usage...${NC}"
-sudo apt install -y xfce4 xfce4-goodies xubuntu-desktop
+sudo apt update
+sudo apt install -y xfce4 xfce4-goodies
 
+# Lightdm set-up 
+echo -e "${INFO}Installing Lightdm setup...${NC}"
+sudo apt install lightdm -y
+if [ $? -eq 0 ]; then
+    echo -e "${INFO}LightDM was successfully installed.${NC}"
+else
+    echo -e "${RED}Failed to install LightDM. Retrying the script...${NC}"
+    exit 1
+fi
+
+# Enabling and starting LightDM
+sudo systemctl enable lightdm
+sudo systemctl start lightdm
+
+# Installing XRDP for remote desktop access
 echo -e "${INFO}Installing XRDP for remote desktop...${NC}"
 sudo apt install -y xrdp
 
-echo -e "${INFO}Configuring XRDP to use lower resolution by default...${NC}"
-sudo sed -i 's/^#xserverbpp=24/xserverbpp=16/' /etc/xrdp/xrdp.ini
-echo -e "${GREEN}XRDP configuration updated to use lower color depth.${NC}"
-
-echo -e "${INFO}Limiting the resolution to a maximum (1280x720)...${NC}"
-sudo sed -i '/\[xrdp1\]/a max_bpp=16\nxres=1280\nyres=720' /etc/xrdp/xrdp.ini
-echo -e "${GREEN}XRDP configuration updated to use lower resolution (1280x720).${NC}"
+# Configuring XRDP to use XFCE
+echo "xfce4-session" > ~/.xsession
 
 echo -e "${INFO}Restarting XRDP service...${NC}"
 sudo systemctl restart xrdp
@@ -59,11 +73,24 @@ sudo systemctl restart xrdp
 echo -e "${INFO}Enabling XRDP service at startup...${NC}"
 sudo systemctl enable xrdp
 
-# docker setup
+echo -e "${INFO}Adding the xrdp user...${NC}"
+sudo adduser xrdp ssl-cert
+
+# Checking XRDP status
+echo "XRDP Status:"
+sudo systemctl status xrdp --no-pager
+
+# Display firewall status
+echo -e "${INFO}Displaying firewall status...${NC}"
+sudo ufw status verbose
+
+# Docker setup: Removing old versions and installing Docker
+echo -e "${INFO}Removing old Docker versions...${NC}"
 for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
     sudo apt-get remove -y $pkg
 done
 
+echo -e "${INFO}Installing Docker...${NC}"
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl
 
@@ -80,12 +107,12 @@ echo \
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# OpenLedger setup
+# OpenLedger installation
+echo -e "${INFO}Downloading and installing OpenLedger...${NC}"
 wget https://cdn.openledger.xyz/openledger-node-1.0.0-linux.zip
 sudo apt install unzip -y
 unzip openledger-node-1.0.0-linux.zip
 sudo dpkg -i openledger-node-1.0.0.deb
-sudo apt --fix-broken install -y
 
 # Get the server IP address
 IP_ADDR=$(hostname -I | awk '{print $1}')
@@ -94,7 +121,6 @@ IP_ADDR=$(hostname -I | awk '{print $1}')
 echo -e "${GREEN}RDP Installation completed.${NC}"
 echo -e "${INFO}You can now connect via Remote Desktop with the following details:${NC}"
 echo -e "${INFO}IP ADDRESS: ${GREEN}$IP_ADDR${NC}"
-echo -e "${INFO}USER: ${GREEN}root${NC}"
 
 # Display thank you message
 echo "==================================="
