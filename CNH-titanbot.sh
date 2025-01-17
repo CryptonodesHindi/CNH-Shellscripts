@@ -96,9 +96,9 @@ for i in $(seq 1 $container_count); do
     mount_point="/mnt/my_volume_$i"
     mkdir -p $mount_point
     sudo mount -o loop $volume_path $mount_point
-    echo "${YELLOW}$volume_path $mount_point ext4 loop,defaults 0 0${NC}" | sudo tee -a /etc/fstab
+    echo -e "${YELLOW}$volume_path $mount_point ext4 loop,defaults 0 0${NC}" | sudo tee -a /etc/fstab
     container_id=$(docker run -d --restart always -v $mount_point:/root/.titanedge/storage --name "titan$i" nezha123/titan-edge)
-    echo "${YELLOW}Titan node $i has started with container ID $container_id${NC}"
+    echo -e "${YELLOW}Titan node $i has started with container ID $container_id${NC}"
     sleep 30
     docker exec -it $container_id bash -c "titan-edge bind --hash=$id https://api-test1.container1.titannet.io/api/v2/device/binding"
 done
