@@ -11,7 +11,7 @@ NC='\033[0m'        # No Color
 
 # Display social details and channel information in large letters manually
 echo "========================================"
-echo -e "${YELLOW} Script is made by CRYTONODEHINDI${NC}"
+echo -e "${YELLOW} Script is made by CRYPTONODEHINDI${NC}"
 echo -e "-------------------------------------"
 
 echo -e ""
